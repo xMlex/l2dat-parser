@@ -1,15 +1,11 @@
 package wdb;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -61,7 +57,7 @@ public class SqlLiteSample {
 			start_time = System.currentTimeMillis();
 			
 			loadEtcItemGrp();
-			if(true) return;
+			//if(true) return;
 			loadIcons();
 			loadNpc();
 
@@ -90,33 +86,71 @@ public class SqlLiteSample {
 	}
 
 	private static void loadEtcItemGrp() throws Exception {
-		List<String> parse_list = Files.readAllLines(new File("./data/dat/etcitemgrp.txt").toPath(), StandardCharsets.UTF_8);	
-		stmt.executeUpdate("DROP TABLE IF EXISTS etcitemgrp");
 		
-		String[] x = parse_list.get(0).split("\t");
-		for (int i = 0; i < x.length; i++) 
-			log(i+" ["+x[i]+"]");
 		String icon;
+		String[] s;
+		List<String> parse_list;
+		PreparedStatement t;
 		
+		parse_list = Files.readAllLines(new File("./data/dat/itemname-e.txt").toPath(), StandardCharsets.UTF_8);	
 		
+		stmt.executeUpdate("DROP TABLE IF EXISTS items");
+		stmt.executeUpdate("CREATE TABLE items (id integer, name string, add_name string, description string,icon string)");
 		
 		for (int i = 1; i < parse_list.size(); i++) {
-			String[] s = parse_list.get(i).split("\t");
-			icon = s[22].toLowerCase().replaceAll("branchsys.icon.", "").replaceAll("branchsys2.icon2.", "").
-					replaceAll("branchsys2.icon.", "").replaceAll("br_cashtex.item.", "")
-					.replaceAll("icon.", "").replaceAll("br_cashtex.item.", "").
-					replaceAll("branchsys.", "").replaceAll("branchsys2.", "");
-			
-			File f = new File("./data/icons/"+icon+".png");
-			
-			if(!f.exists() || f.length() == 0 || f.length() == 45){
-				if(!Utils.downloadFile("http://l2kc.ru/icons/"+URLEncoder.encode(icon,"UTF8")+"_0.png", "./data/icons/"+icon+".png"))
-					log("ICON not load: "+icon);
-			}
+			s = parse_list.get(i).split("\t");
+			t = con.prepareStatement("INSERT INTO items VALUES(?,?,?,?,?)");
+			t.setInt(1, Integer.valueOf(s[0]));
+			t.setString(2, Utils.clearStr(s[1]));
+			t.setString(3, Utils.clearStr(s[2]));
+			t.setString(4, Utils.clearStr(s[3]));
+			t.setString(5, "");
+			t.execute();
+			t.close();
+		}
+		stmt.executeUpdate("CREATE INDEX index_items_id ON items (id)");
+		log("Items: "+getEndTime());	
+		
+		parse_list = Files.readAllLines(new File("./data/dat/etcitemgrp.txt").toPath(), StandardCharsets.UTF_8);	
+		for (int i = 1; i < parse_list.size(); i++) {
+			s = parse_list.get(i).split("\t");
+			icon = s[22];
+			Utils.validFileIcon(icon);
+			icon = Utils.clearIcon(icon);
+			t = con.prepareStatement("UPDATE items SET icon=? WHERE id= ?");
+			t.setInt(2, Integer.valueOf(s[1]));
+			t.setString(1, icon);
+			t.executeUpdate();
+			t.close();			
+		}	
+		parse_list = Files.readAllLines(new File("./data/dat/armorgrp.txt").toPath(), StandardCharsets.UTF_8);	
+		for (int i = 1; i < parse_list.size(); i++) {
+			s = parse_list.get(i).split("\t");
+			icon = s[22];
+			Utils.validFileIcon(icon);
+			icon = Utils.clearIcon(icon);
+			t = con.prepareStatement("UPDATE items SET icon=? WHERE id= ?");
+			t.setInt(2, Integer.valueOf(s[1]));
+			t.setString(1, icon);
+			t.executeUpdate();
+			t.close();
+		}
+		parse_list = Files.readAllLines(new File("./data/dat/weapongrp.txt").toPath(), StandardCharsets.UTF_8);	
+		for (int i = 1; i < parse_list.size(); i++) {
+			s = parse_list.get(i).split("\t");
+			icon = s[22];
+			Utils.validFileIcon(icon);
+			icon = Utils.clearIcon(icon);
+			t = con.prepareStatement("UPDATE items SET icon=? WHERE id= ?");
+			t.setInt(2, Integer.valueOf(s[1]));
+			t.setString(1, icon);
+			t.executeUpdate();
+			t.close();
 		}
 		
-		
+		log("Icons downloading: "+getEndTime());
 	}
+	
 	private static void loadNpc() throws Exception {
 		List<String> parse_list = Files.readAllLines(new File("./data/dat/NpcName-e.txt").toPath(), StandardCharsets.UTF_8);	
 
